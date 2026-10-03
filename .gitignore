@@ -1,0 +1,16 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+.DS_Store
+
+# Examples: built output and their local development settings
+examples/*/dist/
+examples/*/node_modules/
+examples/*/package-lock.json
+examples/*/config.dev.json
+examples/*/vendor/
+examples/plain-html/config.json
+
+# Test scratch
+test/.tmp/

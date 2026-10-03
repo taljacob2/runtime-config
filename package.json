@@ -1,0 +1,82 @@
+{
+  "name": "@taljacob2/runtime-config",
+  "version": "0.1.0",
+  "description": "Build a web app once, set its settings when it is deployed - and refuse to start when they are missing or wrong.",
+  "keywords": [
+    "runtime-config",
+    "runtime-env",
+    "environment-variables",
+    "config",
+    "spa",
+    "vite",
+    "vite-plugin",
+    "docker",
+    "nginx",
+    "envsubst",
+    "build-once-deploy-anywhere"
+  ],
+  "license": "MIT",
+  "author": "Tal Jacob",
+  "homepage": "https://github.com/taljacob2/runtime-config#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taljacob2/runtime-config.git"
+  },
+  "bugs": {
+    "url": "https://github.com/taljacob2/runtime-config/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "runtime-config": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "docker"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:shell": "sh test/shell/run.sh",
+    "check:package": "publint --strict && attw --pack . --profile esm-only",
+    "verify": "npm run typecheck && npm run build && npm test && npm run test:shell && npm run check:package",
+    "prepublishOnly": "npm run verify"
+  },
+  "peerDependencies": {
+    "vite": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@types/node": "^22.0.0",
+    "jsdom": "^29.1.1",
+    "publint": "^0.3.25",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}

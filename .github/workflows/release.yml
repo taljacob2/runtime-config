@@ -1,0 +1,46 @@
+name: Release
+
+# Push a tag like v0.2.0 (matching package.json's version) to publish to npm
+# and create the GitHub release. See RELEASING.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # the GitHub release
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: The tag matches package.json
+        run: |
+          version="v$(node -p 'require("./package.json").version')"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "The tag is $GITHUB_REF_NAME but package.json says $version."
+            exit 1
+          fi
+
+      - run: npm ci
+      - name: Verify (typecheck, build, tests, container-script tests, package checks)
+        run: |
+          command -v envsubst || sudo apt-get install -y gettext-base
+          npm run verify
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)."
+        env:
+          GH_TOKEN: ${{ github.token }}

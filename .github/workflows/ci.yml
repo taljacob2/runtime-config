@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - name: Container script tests
+        run: |
+          command -v envsubst || sudo apt-get install -y gettext-base
+          npm run test:shell
+      - name: Package checks (publint, are-the-types-wrong)
+        if: matrix.node == 24
+        run: npm run check:package
+
+  vite:
+    name: Vite ${{ matrix.vite }}, installed like a user would
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vite: [5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack the library
+        run: npm pack
+      - name: Build the example with Vite ${{ matrix.vite }} and the packed library
+        working-directory: examples/vite
+        run: |
+          npm install --no-audit --no-fund ../../taljacob2-runtime-config-*.tgz "vite@${{ matrix.vite }}"
+          npx vite --version
+          npx vite build
+          test -f dist/config.json.template
+          test ! -f dist/config.json
+          diff <(node -p 'JSON.stringify(JSON.parse(require("fs").readFileSync("dist/config.json.template","utf8")))') \
+               <(echo '{"apiBaseUrl":"${EXAMPLE_API_BASE_URL}","greeting":"${EXAMPLE_GREETING}"}')
+      - name: The build refuses to ship a config.json from public/
+        working-directory: examples/vite
+        run: |
+          mkdir -p public
+          echo '{}' > public/config.json
+          if npx vite build > build.log 2>&1; then
+            cat build.log
+            echo "The build shipped public/config.json - it should have refused."
+            exit 1
+          fi
+          grep "so it would be shipped" build.log
+
+  docker:
+    name: Example image, in a real browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Build the example image
+        run: docker build -f examples/vite/Dockerfile -t runtime-config-example .
+
+      - name: A missing variable stops the container before nginx starts
+        run: |
+          set +e
+          # If the container did NOT stop, nginx would serve forever - the timeout ends that, and the grep fails.
+          timeout 60 docker run --rm runtime-config-example > out.txt 2>&1
+          code=$?
+          set -e
+          cat out.txt
+          echo "exit code: $code"
+          test "$code" -ne 0
+          test "$code" -ne 124
+          grep "these environment variables are not set: EXAMPLE_API_BASE_URL EXAMPLE_GREETING" out.txt
+
+      - name: Start with every variable set - quotes, backslashes and non-ASCII included
+        run: |
+          docker run -d --name app -p 8080:80 \
+            -e EXAMPLE_API_BASE_URL=https://api.example.com \
+            -e 'EXAMPLE_GREETING=Hello "there" \ שלום 🚀' \
+            runtime-config-example
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
+          docker logs app 2>&1 | grep "runtime-config: wrote /usr/share/nginx/html/config.json"
+
+      - name: The file holds exactly the values, and is never cached
+        run: |
+          curl -fsS -D headers.txt -o config.json http://localhost:8080/config.json
+          grep -i "cache-control: no-store" headers.txt
+          node -e '
+            const actual = JSON.parse(require("fs").readFileSync("config.json", "utf8"));
+            const expected = { apiBaseUrl: "https://api.example.com", greeting: "Hello \"there\" \\ שלום 🚀" };
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+              console.error("got", actual, "expected", expected);
+              process.exit(1);
+            }
+            console.log("config.json:", actual);
+          '
+          curl -fsS http://localhost:8080/some/deep/link | grep '<div id="app">'
+
+      - name: Install a browser
+        run: |
+          mkdir -p /tmp/browser && cp test/e2e/browser.mjs /tmp/browser/
+          cd /tmp/browser && npm init -y > /dev/null && npm install --no-audit --no-fund playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: The app runs with the values - also from a deep link
+        working-directory: /tmp/browser
+        run: |
+          node browser.mjs http://localhost:8080/ "#app" 'Hello "there" \ שלום 🚀' "This app talks to https://api.example.com"
+          node browser.mjs http://localhost:8080/some/deep/link "#app" "This app talks to https://api.example.com"
+
+      - name: A wrong value - the page lists the problem instead of starting
+        working-directory: /tmp/browser
+        run: |
+          docker rm -f app
+          docker run -d --name app -p 8080:80 -e EXAMPLE_API_BASE_URL=api.example.com -e EXAMPLE_GREETING=hi runtime-config-example
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://localhost:8080/ && break; sleep 1; done
+          node browser.mjs http://localhost:8080/ "[data-runtime-config-error]" \
+            "This app can't start" '"apiBaseUrl" must start with http:// or https:// - got "api.example.com"'
+
+      - name: Container logs
+        if: always()
+        run: docker logs app 2>&1 || true

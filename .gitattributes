@@ -1,0 +1,2 @@
+# The container script runs under sh in Linux images - CRLF would break it.
+* text=auto eol=lf

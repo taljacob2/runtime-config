@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>runtime-config - no build step</title>
+    <!--
+      No bundler: the browser loads the library itself. Point the import map at a copy
+      of the package's dist folder (cp -r node_modules/@taljacob2/runtime-config/dist vendor/runtime-config),
+      or at a CDN that serves npm packages, for example
+      https://cdn.jsdelivr.net/npm/@taljacob2/runtime-config@0.1.0/dist/index.js
+    -->
+    <script type="importmap">
+      { "imports": { "@taljacob2/runtime-config": "./vendor/runtime-config/index.js" } }
+    </script>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem; }
+    </style>
+  </head>
+  <body>
+    <div id="app">Loading...</div>
+    <script type="module">
+      import { runtimeConfig, showConfigError } from "@taljacob2/runtime-config";
+
+      const config = runtimeConfig({
+        path: "/config.json",
+        envPrefix: "EXAMPLE_",
+        settings: ["apiBaseUrl"],
+      });
+
+      const app = document.getElementById("app");
+      try {
+        await config.load();
+      } catch (error) {
+        showConfigError(error, { into: app });
+        throw error;
+      }
+
+      app.textContent = `This page talks to ${config.get().apiBaseUrl}`;
+    </script>
+  </body>
+</html>
