@@ -1,7 +1,9 @@
 name: Release
 
 # Push a tag that is the bare version - 0.2.0, no "v" (matching package.json's
-# version) - to publish to npm and create the GitHub release. See RELEASING.md.
+# version). The workflow verifies the package and STAGES it on npm with a
+# stage-only token: nothing goes live until a maintainer approves it with 2FA.
+# See RELEASING.md.
 on:
   push:
     tags:
@@ -13,7 +15,7 @@ permissions:
   id-token: write # npm provenance
 
 jobs:
-  publish:
+  stage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,12 +25,43 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
+      # `npm stage` needs npm 11.15 or later.
+      - run: npm install -g "npm@^11.15.0"
+
       - name: The tag matches package.json
+        id: package
         run: |
+          name="$(node -p 'require("./package.json").name')"
           version="$(node -p 'require("./package.json").version')"
           if [ "$version" != "$GITHUB_REF_NAME" ]; then
             echo "The tag is $GITHUB_REF_NAME but package.json says $version."
             exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Is it already on npm?
+        id: registry
+        env:
+          NAME: ${{ steps.package.outputs.name }}
+          VERSION: ${{ steps.package.outputs.version }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if ! out=$(npm view "$NAME" name 2>&1); then
+            if printf '%s' "$out" | grep -q E404; then
+              echo "$NAME isn't on npm yet, and a staged version needs an existing package."
+              echo "Publish the first version by hand - see RELEASING.md, 'The first release'."
+            else
+              echo "Couldn't ask npm about $NAME:"
+              echo "$out"
+            fi
+            exit 1
+          fi
+          if [ "$(npm view "$NAME@$VERSION" version 2> /dev/null)" = "$VERSION" ]; then
+            echo "$NAME@$VERSION is already on npm (published by hand) - nothing to stage."
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
       - run: npm ci
@@ -37,12 +70,47 @@ jobs:
           command -v envsubst || sudo apt-get install -y gettext-base
           npm run verify
 
-      - name: Publish to npm
-        run: npm publish --provenance --access public --ignore-scripts
+      - name: Stage on npm (goes live only when a maintainer approves it with 2FA)
+        if: steps.registry.outputs.published == 'false'
+        run: npm stage publish --provenance --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: How to approve it
+        if: steps.registry.outputs.published == 'false'
+        env:
+          NAME: ${{ steps.package.outputs.name }}
+          VERSION: ${{ steps.package.outputs.version }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          {
+            echo "## $NAME@$VERSION is staged on npm - not live yet"
+            echo
+            echo "Approve it with 2FA, on npmjs.com (the package's **Staged Packages** tab) or from a terminal:"
+            echo
+            echo '```sh'
+            echo "npm stage list $NAME"
+            echo "npm stage approve <stage-id>"
+            echo '```'
+            echo
+            echo "Then publish this tag's draft GitHub release. To drop it instead: \`npm stage reject <stage-id>\`."
+            echo
+            echo "### Staged versions right now"
+            echo
+            echo '```'
+            npm stage list "$NAME" 2>&1 || echo "(npm stage list failed - check npmjs.com)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A staged version isn't on npm until it's approved, so its release starts as a draft.
       - name: GitHub release
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)."
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISHED: ${{ steps.registry.outputs.published }}
+        run: |
+          notes="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)."
+          if [ "$PUBLISHED" = "true" ]; then
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "$GITHUB_REF_NAME" --notes "$notes"
+          fi
