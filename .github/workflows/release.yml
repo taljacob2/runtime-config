@@ -1,10 +1,12 @@
 name: Release
 
-# Push a tag like v0.2.0 (matching package.json's version) to publish to npm
-# and create the GitHub release. See RELEASING.md.
+# Push a tag that is the bare version - 0.2.0, no "v" (matching package.json's
+# version) - to publish to npm and create the GitHub release. See RELEASING.md.
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+-*"
 
 permissions:
   contents: write # the GitHub release
@@ -23,7 +25,7 @@ jobs:
 
       - name: The tag matches package.json
         run: |
-          version="v$(node -p 'require("./package.json").version')"
+          version="$(node -p 'require("./package.json").version')"
           if [ "$version" != "$GITHUB_REF_NAME" ]; then
             echo "The tag is $GITHUB_REF_NAME but package.json says $version."
             exit 1
