@@ -1,4 +1,4 @@
-import { runtimeConfig } from "@taljacob2/runtime-config";
+import { runtimeConfig } from "@taljacob/runtime-config";
 
 // The app's one definition of its settings. Each is filled from an environment
 // variable when the app is deployed: apiBaseUrl from EXAMPLE_API_BASE_URL,

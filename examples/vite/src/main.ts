@@ -1,4 +1,4 @@
-import { showConfigError } from "@taljacob2/runtime-config";
+import { showConfigError } from "@taljacob/runtime-config";
 import { config } from "./config";
 
 const root = document.getElementById("app")!;

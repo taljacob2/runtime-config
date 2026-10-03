@@ -3,7 +3,7 @@
 **Build a web app once. Set its settings when it is deployed. Refuse to start when they are missing or wrong.**
 
 [![CI](https://github.com/taljacob2/runtime-config/actions/workflows/ci.yml/badge.svg)](https://github.com/taljacob2/runtime-config/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@taljacob2/runtime-config)](https://www.npmjs.com/package/@taljacob2/runtime-config)
+[![npm](https://img.shields.io/npm/v/@taljacob/runtime-config)](https://www.npmjs.com/package/@taljacob/runtime-config)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A browser can't read environment variables. So tools like Vite, webpack and
@@ -46,7 +46,7 @@ and its container side needs only `sh` and `envsubst`, not Node.
 ## Install
 
 ```sh
-npm install @taljacob2/runtime-config
+npm install @taljacob/runtime-config
 ```
 
 ESM only. The browser part runs in every current browser. The Vite plugin, the
@@ -59,7 +59,7 @@ filled from an environment variable named after it.
 
 ```ts
 // src/config.ts
-import { runtimeConfig } from "@taljacob2/runtime-config";
+import { runtimeConfig } from "@taljacob/runtime-config";
 
 export const config = runtimeConfig({
   path: "/config.json",
@@ -77,7 +77,7 @@ numbers or flags, is your `check`'s job, with whatever rules you like (or none).
 
 ```ts
 // src/main.ts
-import { showConfigError } from "@taljacob2/runtime-config";
+import { showConfigError } from "@taljacob/runtime-config";
 import { config } from "./config";
 
 try {
@@ -94,7 +94,7 @@ startApp(); // anywhere from here: config.get().apiBaseUrl
 
 ```ts
 // vite.config.ts
-import { runtimeConfigPlugin } from "@taljacob2/runtime-config/vite";
+import { runtimeConfigPlugin } from "@taljacob/runtime-config/vite";
 import { defineConfig } from "vite";
 import { config } from "./src/config";
 
@@ -122,7 +122,7 @@ RUN npm run build
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY --from=build /app/node_modules/@taljacob2/runtime-config/docker/40-runtime-config.sh /docker-entrypoint.d/
+COPY --from=build /app/node_modules/@taljacob/runtime-config/docker/40-runtime-config.sh /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/40-runtime-config.sh
 ```
 
@@ -228,10 +228,10 @@ packages, and map the name with an import map:
 
 ```html
 <script type="importmap">
-  { "imports": { "@taljacob2/runtime-config": "./vendor/runtime-config/index.js" } }
+  { "imports": { "@taljacob/runtime-config": "./vendor/runtime-config/index.js" } }
 </script>
 <script type="module">
-  import { runtimeConfig, showConfigError } from "@taljacob2/runtime-config";
+  import { runtimeConfig, showConfigError } from "@taljacob/runtime-config";
 
   const config = runtimeConfig({ path: "/config.json", envPrefix: "MYAPP_", settings: ["apiBaseUrl"] });
   try {
@@ -281,7 +281,7 @@ answers `/config.json` with the same names and checks:
 
 ```ts
 // app/config.json/route.ts - serves /config.json from the server's environment
-import { configResponse } from "@taljacob2/runtime-config/server";
+import { configResponse } from "@taljacob/runtime-config/server";
 import { connection } from "next/server";
 import { config } from "../../runtime-config";
 
@@ -310,7 +310,7 @@ with a 500:
 // instrumentation.ts
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { readEnv } = await import("@taljacob2/runtime-config/server");
+    const { readEnv } = await import("@taljacob/runtime-config/server");
     const { config } = await import("./runtime-config");
     try {
       readEnv(config, process.env);
@@ -388,7 +388,7 @@ An `Error` whose `message` lists every problem, one per line. It also has
 Replaces the content of `into` (default `document.body`) with the message,
 as an `alert`, with the text set as text.
 
-### `readEnv(config, env)` and `configResponse(config, env)` (from `@taljacob2/runtime-config/server`)
+### `readEnv(config, env)` and `configResponse(config, env)` (from `@taljacob/runtime-config/server`)
 
 `readEnv` reads each setting from its variable in `env` (pass `process.env`)
 and runs the same checks. Throws a `ConfigError` with source
@@ -397,7 +397,7 @@ and runs the same checks. Throws a `ConfigError` with source
 `configResponse` wraps it as a Fetch API `Response`: the values as JSON, or
 a 500 whose plain-text body lists every problem. Both answers are never cached.
 
-### `runtimeConfigPlugin(config, { devFile? })` (from `@taljacob2/runtime-config/vite`)
+### `runtimeConfigPlugin(config, { devFile? })` (from `@taljacob/runtime-config/vite`)
 
 Vite 5 or later. `devFile` is relative to the project root (default
 `config.dev.json`); keep it out of `public/`, or the build refuses.

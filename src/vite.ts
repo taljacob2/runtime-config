@@ -23,7 +23,7 @@ export interface RuntimeConfigPluginOptions {
  *
  * @example
  * // vite.config.ts
- * import { runtimeConfigPlugin } from "@taljacob2/runtime-config/vite";
+ * import { runtimeConfigPlugin } from "@taljacob/runtime-config/vite";
  * import { config } from "./src/config";
  *
  * export default defineConfig({ plugins: [runtimeConfigPlugin(config)] });

@@ -54,7 +54,7 @@ jobs:
       - name: Build the example with Vite ${{ matrix.vite }} and the packed library
         working-directory: examples/vite
         run: |
-          npm install --no-audit --no-fund ../../taljacob2-runtime-config-*.tgz "vite@${{ matrix.vite }}"
+          npm install --no-audit --no-fund ../../taljacob-runtime-config-*.tgz "vite@${{ matrix.vite }}"
           npx vite --version
           npx vite build
           test -f dist/config.json.template

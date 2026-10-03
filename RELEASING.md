@@ -1,6 +1,6 @@
 # Releasing
 
-Releases go to npm as `@taljacob2/runtime-config`, through **staged
+Releases go to npm as `@taljacob/runtime-config`, through **staged
 publishing**: CI holds only a *stage-only* token, which can put a version up
 for review but can't publish it. A version goes live only when a maintainer
 approves it with two-factor authentication (2FA). A leaked CI token therefore
@@ -17,7 +17,7 @@ in Git Bash or any POSIX shell (the checks run `sh`):
 
 ```sh
 npm ci
-npm login                      # as the owner of the @taljacob2 scope
+npm login                      # as the owner of the @taljacob scope
 npm publish --access public    # runs `npm run verify` first, then asks for your 2FA code
 ```
 
@@ -35,8 +35,10 @@ git push origin 0.1.0
 ## The stage-only token (once)
 
 1. On npmjs.com: **Access Tokens** -> **Generate New Token** -> **Granular Access Token**.
-2. Under packages and scopes, choose **Read and write (stage only)** for
-   `@taljacob2/runtime-config`, and give it an expiry date.
+2. Under packages and scopes, choose **Read and write (stage only)**, and give
+   it an expiry date. Limit it to `@taljacob/runtime-config` - a token made
+   before the first publish can't name the package yet, so narrow it (or make a
+   new one) once `0.1.0` is on npm.
 3. Save it as the repository secret `NPM_TOKEN` - the command asks for the
    value, so it never lands in your shell history:
 
@@ -66,7 +68,7 @@ never publish a version directly.
    from a terminal:
 
    ```sh
-   npm stage list @taljacob2/runtime-config
+   npm stage list @taljacob/runtime-config
    npm stage view <stage-id>       # optional: inspect it first
    npm stage approve <stage-id>    # asks for your 2FA code - now it's live
    ```

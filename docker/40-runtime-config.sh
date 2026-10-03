@@ -8,7 +8,7 @@
 # Made for the official nginx images, which run every executable *.sh in
 # /docker-entrypoint.d/ before nginx starts (and stop if one fails):
 #
-#   COPY --from=build /app/node_modules/@taljacob2/runtime-config/docker/40-runtime-config.sh /docker-entrypoint.d/
+#   COPY --from=build /app/node_modules/@taljacob/runtime-config/docker/40-runtime-config.sh /docker-entrypoint.d/
 #   RUN chmod +x /docker-entrypoint.d/40-runtime-config.sh
 #
 # Any image with sh, grep, sed and envsubst can run it too, before its server starts.

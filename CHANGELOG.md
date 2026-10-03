@@ -18,10 +18,10 @@ The first release.
   non-text value, an unfilled placeholder, an unknown key, and the project's
   own check - which still runs alongside an unknown key's problem.
 - `showConfigError()`: the problems on the page, in plain DOM, set as text.
-- `@taljacob2/runtime-config/vite`: serves a local dev file under `vite` and
+- `@taljacob/runtime-config/vite`: serves a local dev file under `vite` and
   `vite preview`; ships the template and refuses to ship a real config file
   under `vite build`. Vite 5 to 8.
-- `@taljacob2/runtime-config/server`: `readEnv()` and `configResponse()` for
+- `@taljacob/runtime-config/server`: `readEnv()` and `configResponse()` for
   servers - Next.js route handlers and `instrumentation.ts`, Node, Fetch API servers.
 - The `runtime-config template` CLI, for any build tool.
 - `docker/40-runtime-config.sh`: fills the file from environment variables when

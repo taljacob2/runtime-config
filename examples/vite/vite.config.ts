@@ -1,4 +1,4 @@
-import { runtimeConfigPlugin } from "@taljacob2/runtime-config/vite";
+import { runtimeConfigPlugin } from "@taljacob/runtime-config/vite";
 import { defineConfig } from "vite";
 import { config } from "./src/config";
 

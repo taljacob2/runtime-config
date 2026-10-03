@@ -6,12 +6,12 @@
     <title>runtime-config - no build step</title>
     <!--
       No bundler: the browser loads the library itself. Point the import map at a copy
-      of the package's dist folder (cp -r node_modules/@taljacob2/runtime-config/dist vendor/runtime-config),
+      of the package's dist folder (cp -r node_modules/@taljacob/runtime-config/dist vendor/runtime-config),
       or at a CDN that serves npm packages, for example
-      https://cdn.jsdelivr.net/npm/@taljacob2/runtime-config@0.1.0/dist/index.js
+      https://cdn.jsdelivr.net/npm/@taljacob/runtime-config@0.1.0/dist/index.js
     -->
     <script type="importmap">
-      { "imports": { "@taljacob2/runtime-config": "./vendor/runtime-config/index.js" } }
+      { "imports": { "@taljacob/runtime-config": "./vendor/runtime-config/index.js" } }
     </script>
     <style>
       body { font: 16px/1.5 system-ui, sans-serif; margin: 2rem; }
@@ -20,7 +20,7 @@
   <body>
     <div id="app">Loading...</div>
     <script type="module">
-      import { runtimeConfig, showConfigError } from "@taljacob2/runtime-config";
+      import { runtimeConfig, showConfigError } from "@taljacob/runtime-config";
 
       const config = runtimeConfig({
         path: "/config.json",
